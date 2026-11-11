@@ -6,17 +6,23 @@ service=$1
 image=$2
 case "$service" in frontend|backend|ai) ;; *) exit 2;; esac
 [[ $image =~ ^ghcr\.io/hieu1020pk-web/jobbod-${service}@sha256:[a-f0-9]{64}$ ]] || exit 2
-exec 9>/run/lock/jobbod-app.lock
-flock -w 900 9
 cd /opt/jobbod/app
 available=$(df -Pk /var/lib/docker | awk 'NR==2 {print $4}')
 ((available >= 3145728)) || { echo 'Need at least 3 GiB free disk' >&2; exit 1; }
 # No registry token on server: packages must be public.
-docker pull "$image"
+timeout 600 docker pull "$image"
+exec 9>/run/lock/jobbod-app.lock
+flock -w 900 9
+cache_kb=$(du -sk /var/lib/jobbod/models | awk '{print $1}')
+((cache_kb <= 8388608)) || { echo 'Model cache exceeds 8 GiB budget; review model revisions before deploying' >&2; exit 1; }
 key=${service^^}_IMAGE
 state=/etc/jobbod/releases.env
 touch "$state"
 previous=$(sed -n "s/^${key}=//p" "$state")
+retained_previous=$previous
+if [[ $image == "$previous" && -f /etc/jobbod/${service}.previous ]]; then
+    retained_previous=$(cat "/etc/jobbod/${service}.previous")
+fi
 set_image() {
     KEY="$key" IMAGE="$1" STATE="$state" python3 - <<'PY'
 import os
@@ -54,10 +60,10 @@ if grep -q '^FRONTEND_IMAGE=' "$state" && grep -q '^BACKEND_IMAGE=' "$state"; th
         rollback; exit 1
     fi
 fi
-printf '%s\n' "$previous" > "/etc/jobbod/${service}.previous"
+printf '%s\n' "$retained_previous" > "/etc/jobbod/${service}.previous"
 # Delete only old repository images. Preserve running + immediate rollback images.
 while read -r old; do
-    [[ -z $old || $old == "$image" || $old == "$previous" ]] && continue
+    [[ -z $old || $old == "$image" || $old == "$retained_previous" ]] && continue
     if ! docker image rm "$old"; then echo "Image retained (still referenced): $old" >&2; fi
 done < <(docker image ls --digests --format '{{.Repository}}@{{.Digest}}' "ghcr.io/hieu1020pk-web/jobbod-$service" | grep -v '<none>' | sort -u)
 echo "Deployed $service $image"

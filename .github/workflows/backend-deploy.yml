@@ -2,7 +2,7 @@ name: backend deploy
 on:
   push:
     branches: [backend/ci-cd]
-    paths-ignore: ['.agents/**', 'AGENTS.md', 'CLAUDE.md', 'CHANGELOG.md', '**/*.md']
+    paths-ignore: ['.agents/**', 'AGENTS.md', 'CLAUDE.md', 'CHANGELOG.md', '**/*.md', 'deploy/**', '.github/workflows/infra-images.yml']
   workflow_dispatch:
 permissions:
   contents: read

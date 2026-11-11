@@ -18,10 +18,18 @@ app)
     ;;
 infra)
     install -d -m 755 /opt/jobbod/infra
-    install -m 644 "$source_dir/infra/compose.yaml" "$source_dir/infra/redis.conf" /opt/jobbod/infra/
+    install -m 644 "$source_dir/infra/compose.yaml" "$source_dir/infra/redis.conf" "$source_dir/infra/minio-admin.py" "$source_dir/infra/admin-requirements.txt" /opt/jobbod/infra/
+    install -m 755 "$source_dir/scripts/minio-admin.sh" /usr/local/sbin/jobbod-minio-admin
+    install -m 755 "$source_dir/scripts/rotate-runtime.py" /usr/local/sbin/jobbod-rotate-runtime
+    python3 "$source_dir/scripts/init-secrets.py"
+    if [[ ! -f /opt/jobbod/infra/.env ]]; then install -m 600 "$source_dir/infra/.env.example" /opt/jobbod/infra/.env; fi
     install -m 755 "$source_dir/infra/init-db.sh" /opt/jobbod/infra/
     install -d -o 999 -g 999 -m 700 /var/lib/jobbod/postgres /var/lib/jobbod/redis
     install -d -o 10001 -g 10001 -m 700 /var/lib/jobbod/minio
+    install -m 755 "$source_dir/scripts/infra-firewall.sh" /usr/local/sbin/jobbod-infra-firewall
+    printf '[Unit]\nDescription=Jobbod Docker ingress firewall\nAfter=docker.service tailscaled.service\nRequires=docker.service\nPartOf=docker.service\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/usr/local/sbin/jobbod-infra-firewall\n[Install]\nWantedBy=docker.service\n' > /etc/systemd/system/jobbod-infra-firewall.service
+    systemctl daemon-reload
+    systemctl enable --now jobbod-infra-firewall.service
     install -m 755 "$source_dir/scripts/backup.sh" /usr/local/sbin/jobbod-backup
     install -m 755 "$source_dir/scripts/restore.sh" /usr/local/sbin/jobbod-restore
     install -d -m 700 /var/backups/jobbod

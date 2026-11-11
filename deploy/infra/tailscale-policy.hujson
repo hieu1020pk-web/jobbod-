@@ -1,0 +1,8 @@
+// Merge these grants into the existing tailnet policy as a tailnet administrator.
+// Host firewall already enforces these app-to-infra restrictions.
+{
+  "grants": [
+    {"src": ["100.110.186.46"], "dst": ["100.98.24.40"], "ip": ["tcp:5432", "tcp:6379", "tcp:9000"]},
+    {"src": ["100.74.53.37"], "dst": ["100.98.24.40"], "ip": ["tcp:22", "tcp:5432", "tcp:6379", "tcp:9000", "tcp:9001"]}
+  ]
+}
