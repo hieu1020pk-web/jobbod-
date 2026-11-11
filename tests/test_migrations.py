@@ -41,6 +41,10 @@ class MigrationTests(unittest.TestCase):
         config.write_text(json.dumps({'migration_url': self.url.replace('postgresql://', 'postgresql+psycopg://')}))
         self.env = {**os.environ, 'JOBBOD_MIGRATION_CONFIG_FILE': str(config)}
         self.env.pop('JOBBOD_MIGRATION_MODE', None)
+        if self._testMethodName in {'test_fresh_database_and_repeat_upgrade', 'test_previous_release_to_current_head'}:
+            # Full history may contain previously operator-approved maintenance revisions.
+            # Only the disposable test DB gets this mode; deployment retains expand-only.
+            self.env['JOBBOD_MIGRATION_MODE'] = 'maintenance'
 
     def tearDown(self):
         self.temporary.cleanup()
