@@ -1,0 +1,17 @@
+[project]
+name = "jobbod-ai"
+version = "0.1.0"
+description = "Jobbod ai service"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.162.4",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+]

@@ -1,0 +1,19 @@
+{
+  "schema_version": "2.0",
+  "project_id": "jobbod-ai",
+  "repository": "https://github.com/hieu1020pk-web/jobbod-.git",
+  "default_branch": "ai/develop",
+  "approved_by": "user: bootstrap conversation 2026-11-11",
+  "owners": {
+    "tech_lead": "hieu1020pk-web",
+    "security_owner": "hieu1020pk-web",
+    "release_owner": "hieu1020pk-web"
+  },
+  "ci_check_bindings": {},
+  "additional_required_checks": [],
+  "approved_exception_process": "Explicit user approval recorded with task evidence",
+  "task_contract_directory": ".agents/tasks",
+  "production_releases_default_to_human_approval": true,
+  "max_parallel_agents": 1,
+  "approved_at": "2026-11-11"
+}

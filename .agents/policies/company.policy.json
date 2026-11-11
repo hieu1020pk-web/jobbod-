@@ -1,0 +1,195 @@
+{
+  "schema_version": "2.0",
+  "policy_version": "2.0.0",
+  "sop_reference": "AI Agents Software Delivery SOP v1.1 (2026-11-09)",
+  "risk": {
+    "tiers": [
+      "FAST",
+      "STANDARD",
+      "CRITICAL"
+    ],
+    "fast_change_types": [
+      "documentation",
+      "nonbusiness_ui",
+      "local_refactor",
+      "test_update",
+      "dependency_patch",
+      "telemetry_logging",
+      "styling_asset",
+      "config_tweak"
+    ],
+    "critical_signals": [
+      "authentication",
+      "authorization",
+      "payment",
+      "pii",
+      "production_data",
+      "breaking_contract",
+      "irreversible_migration",
+      "production_infrastructure",
+      "slo_impact",
+      "destructive_operation",
+      "high_risk_security"
+    ],
+    "critical_change_types": [
+      "authentication",
+      "authorization",
+      "payment",
+      "pii",
+      "api_breaking",
+      "irreversible_migration",
+      "production_infrastructure"
+    ],
+    "unknowns_block_execution": true
+  },
+  "execution": {
+    "maximum_code_fix_attempts_per_gate_failure": 0,
+    "maximum_transient_tool_retries": 0,
+    "budget_warning_fraction": 0.8,
+    "concurrency": "project_defined_after_capacity_measurement",
+    "require_isolated_writable_scope": false,
+    "require_independent_review": false
+  },
+  "quality": {
+    "tier_ci_baseline": {
+      "FAST": [],
+      "STANDARD": [
+        "build",
+        "lint",
+        "unit"
+      ],
+      "CRITICAL": [
+        "build",
+        "lint",
+        "unit",
+        "sast",
+        "sca",
+        "secrets_scan"
+      ]
+    },
+    "change_ci_checks": {
+      "documentation": [
+        "docs_check"
+      ],
+      "nonbusiness_ui": [
+        "lint",
+        "component"
+      ],
+      "local_refactor": [
+        "build",
+        "lint",
+        "unit"
+      ],
+      "test_update": [
+        "unit"
+      ],
+      "dependency_patch": [
+        "build",
+        "unit"
+      ],
+      "telemetry_logging": [
+        "build",
+        "lint"
+      ],
+      "styling_asset": [
+        "lint"
+      ],
+      "config_tweak": [
+        "build"
+      ],
+      "business_logic": [
+        "business_regression"
+      ],
+      "api_compatible": [
+        "api_contract"
+      ],
+      "api_breaking": [
+        "api_contract",
+        "cross_service_integration"
+      ],
+      "database_migration": [
+        "migration_test",
+        "integration"
+      ],
+      "irreversible_migration": [
+        "migration_test",
+        "restore_drill",
+        "integration"
+      ],
+      "event_messaging": [
+        "event_contract",
+        "idempotency_test"
+      ],
+      "frontend_business_flow": [
+        "component",
+        "e2e"
+      ],
+      "authentication": [
+        "authorization_negative",
+        "security_review_check"
+      ],
+      "authorization": [
+        "authorization_negative",
+        "security_review_check"
+      ],
+      "payment": [
+        "payment_negative",
+        "idempotency_test",
+        "security_review_check"
+      ],
+      "pii": [
+        "data_handling_check",
+        "security_review_check"
+      ],
+      "production_infrastructure": [
+        "iac_validation",
+        "smoke_check",
+        "rollback_readiness"
+      ]
+    },
+    "critical_evidence": [
+      "rollback_or_restore_plan"
+    ],
+    "baseline_evidence": [
+      "commit_specific_ci_evidence"
+    ],
+    "required_plan_review_tiers": [],
+    "reason_required_for_na": true,
+    "merge_commit_revalidation": true
+  },
+  "scope": {
+    "governance_protected_globs": [
+      ".agents/policies/**",
+      ".agents/rules/**",
+      ".agents/roles/**",
+      ".agents/scripts/**",
+      ".github/workflows/**",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CODEOWNERS",
+      ".agents/project/**",
+      ".github/CODEOWNERS",
+      ".gitlab-ci.yml",
+      ".gitlab/**",
+      ".circleci/**",
+      "Jenkinsfile",
+      "azure-pipelines.yml",
+      "**/CODEOWNERS",
+      ".agents/skills/**",
+      ".agents/templates/**"
+    ],
+    "deny_globs": [
+      ".env",
+      ".env.*",
+      "**/.env",
+      "**/.env.*",
+      "**/*private*.key",
+      "**/secrets/**"
+    ]
+  },
+  "approval": {
+    "critical_production_requires_human": true,
+    "tier_downgrade_requires_human_decision_record": true,
+    "governance_change_requires_separate_review": true
+  }
+}
