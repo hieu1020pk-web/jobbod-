@@ -12,3 +12,5 @@ models
 tests
 deploy
 *.md
+config/
+.cache/
