@@ -1,6 +1,7 @@
 """Enable pgvector; backend owns schema migrations."""
 from alembic import op
 
+deployment_policy = "expand"
 revision = "0001"
 down_revision = None
 branch_labels = None
