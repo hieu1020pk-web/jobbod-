@@ -14,4 +14,4 @@ COPY --from=build /app /app
 
 USER 10001:10001
 EXPOSE 8000
-CMD ["uvicorn", "jobbod_ai.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log"]
+CMD ["python", "-c", "import time; time.sleep(600)"]
