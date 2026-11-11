@@ -1,0 +1,199 @@
+{
+  "name": "jobbod-app",
+  "services": {
+    "frontend": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${FRONTEND_IMAGE:-ghcr.io/hieu1020pk-web/jobbod-frontend:bootstrap}",
+      "init": true,
+      "mem_limit": "512m",
+      "cpus": 1.5,
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ],
+        "interval": "10s",
+        "timeout": "15s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:size=64m,mode=1777"
+      ],
+      "volumes": [
+        "/var/lib/jobbod/next-cache:/app/.next/cache"
+      ]
+    },
+    "backend": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${BACKEND_IMAGE:-ghcr.io/hieu1020pk-web/jobbod-backend:bootstrap}",
+      "init": true,
+      "mem_limit": "640m",
+      "cpus": 1.5,
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=12)\""
+        ],
+        "interval": "10s",
+        "timeout": "15s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:size=64m,mode=1777"
+      ],
+      "secrets": [
+        "backend_config"
+      ],
+      "environment": {
+        "JOBBOD_REQUIRE_CONFIG": "1"
+      }
+    },
+    "ai": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${AI_IMAGE:-ghcr.io/hieu1020pk-web/jobbod-ai:bootstrap}",
+      "init": true,
+      "mem_limit": "1536m",
+      "cpus": 1.5,
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=12)\""
+        ],
+        "interval": "10s",
+        "timeout": "15s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:size=64m,mode=1777"
+      ],
+      "volumes": [
+        "/var/lib/jobbod/models:/models"
+      ],
+      "environment": {
+        "HF_HOME": "/models/huggingface",
+        "SENTENCE_TRANSFORMERS_HOME": "/models/sentence-transformers",
+        "OMP_NUM_THREADS": "1",
+        "TOKENIZERS_PARALLELISM": "false"
+      }
+    },
+    "migrate": {
+      "image": "${BACKEND_IMAGE:-ghcr.io/hieu1020pk-web/jobbod-backend:bootstrap}",
+      "profiles": [
+        "tools"
+      ],
+      "command": [
+        "alembic",
+        "upgrade",
+        "head"
+      ],
+      "environment": {
+        "JOBBOD_MIGRATION_CONFIG_FILE": "/run/secrets/migration_config"
+      },
+      "secrets": [
+        "migration_config"
+      ],
+      "mem_limit": "256m",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:size=16m"
+      ]
+    },
+    "nginx": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "nginx:stable-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311",
+      "ports": [
+        "80:80"
+      ],
+      "volumes": [
+        "./nginx.conf:/etc/nginx/nginx.conf:ro"
+      ],
+      "mem_limit": "64m",
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1/"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      }
+    }
+  },
+  "secrets": {
+    "backend_config": {
+      "file": "/etc/jobbod/secrets/backend_config"
+    },
+    "migration_config": {
+      "file": "/etc/jobbod/secrets/migration_config"
+    }
+  }
+}

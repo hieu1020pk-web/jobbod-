@@ -1,0 +1,165 @@
+{
+  "name": "jobbod-infra",
+  "services": {
+    "postgres": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "pgvector/pgvector:pg17@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8",
+      "environment": {
+        "POSTGRES_DB": "jobbod",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD_FILE": "/run/secrets/db_admin_password",
+        "POSTGRES_INITDB_ARGS": "--auth-host=scram-sha-256"
+      },
+      "ports": [
+        "100.98.24.40:5432:5432"
+      ],
+      "volumes": [
+        "/var/lib/jobbod/postgres:/var/lib/postgresql/data",
+        "./init-db.sh:/docker-entrypoint-initdb.d/10-jobbod.sh:ro"
+      ],
+      "secrets": [
+        "db_admin_password",
+        "db_runtime_password",
+        "db_migration_password"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d jobbod"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "mem_limit": "2g",
+      "shm_size": "256m",
+      "command": [
+        "postgres",
+        "-c",
+        "shared_buffers=512MB",
+        "-c",
+        "max_connections=60",
+        "-c",
+        "statement_timeout=120000",
+        "-c",
+        "idle_in_transaction_session_timeout=60000"
+      ]
+    },
+    "redis": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "redis:7.4-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7",
+      "command": [
+        "redis-server",
+        "/etc/redis/redis.conf"
+      ],
+      "ports": [
+        "100.98.24.40:6379:6379"
+      ],
+      "volumes": [
+        "/var/lib/jobbod/redis:/data",
+        "./redis.conf:/etc/redis/redis.conf:ro"
+      ],
+      "secrets": [
+        "redis_acl"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "redis-cli ping 2>&1 | grep -q NOAUTH"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "mem_limit": "512m"
+    },
+    "minio": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "image": "${MINIO_IMAGE:?Set pinned MINIO_IMAGE}",
+      "command": [
+        "server",
+        "/data",
+        "--console-address",
+        ":9001"
+      ],
+      "environment": {
+        "MINIO_ROOT_USER_FILE": "/run/secrets/minio_root_user",
+        "MINIO_ROOT_PASSWORD_FILE": "/run/secrets/minio_root_password"
+      },
+      "ports": [
+        "100.98.24.40:9000:9000",
+        "100.98.24.40:9001:9001"
+      ],
+      "volumes": [
+        "/var/lib/jobbod/minio:/data"
+      ],
+      "secrets": [
+        "minio_root_user",
+        "minio_root_password"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:9000/minio/health/live >/dev/null"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 6,
+        "start_period": "20s"
+      },
+      "mem_limit": "1536m"
+    }
+  },
+  "secrets": {
+    "db_admin_password": {
+      "file": "/etc/jobbod/secrets/db_admin_password"
+    },
+    "db_runtime_password": {
+      "file": "/etc/jobbod/secrets/db_runtime_password"
+    },
+    "db_migration_password": {
+      "file": "/etc/jobbod/secrets/db_migration_password"
+    },
+    "redis_acl": {
+      "file": "/etc/jobbod/secrets/redis_acl"
+    },
+    "minio_root_user": {
+      "file": "/etc/jobbod/secrets/minio_root_user"
+    },
+    "minio_root_password": {
+      "file": "/etc/jobbod/secrets/minio_root_password"
+    }
+  }
+}
