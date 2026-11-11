@@ -13,6 +13,13 @@ and push to deploy. Never merge branches belonging to different services.
 The original Vite source remains in `main` and Git history; it is replaced on
 these service branches. Backend owns migrations and this canonical deploy tree.
 
+Backend CI rehearses changed migrations/dependencies on disposable PostgreSQL +
+pgvector (manual dispatch always rehearses); app CI never upgrades infra.
+Every pending revision declares deployment_policy=expand or maintenance; the latter
+requires an explicit operator maintenance window. PostgreSQL advisory locking,
+revision checks and PostgreSQL 17 / pgvector 0.8.x compatibility guard apply.
+The policy declaration still requires review and application-specific data tests.
+
 Each app workflow does checkout, cached native amd64 build/push, then exactly
 one SSH invocation for deployment and checks. No separate CI test/lint jobs.
 Packages use `contents: read`, `packages: write`; publish GHCR packages as public
@@ -21,12 +28,19 @@ and verify anonymous pull. The server does not log into GHCR. GitHub secrets:
 (pinned verified app SSH host keys). Do not replace host verification with scans
 inside CI. Package visibility is independent of repository visibility.
 
-The deployment key may only invoke `deploy frontend|backend|ai <image@digest>`.
+The deployment key may only invoke `deploy frontend|backend|ai <image@digest> <run_id> <commit_sha>`.
 The root-owned deployment script validates the exact registry/repository and
 SHA-256 digest. A global flock serializes app releases; pull has a 10-minute
 limit, lock wait 15 minutes, readiness wait 150 seconds. Workflows do not cancel
 an active deployment. No arbitrary remote shell, user-supplied Compose or host
 mounts are accepted through that key.
+
+The entrypoint is installed from scripts/deploy.py; the former deploy.sh is removed.
+Root-only per-service journals and bounded history live under /etc/jobbod/deployments.
+Signals roll back; the next deployment reconciles journaled interruptions, stops
+recorded orphan migration containers, and fails closed if recovery fails.
+Older run IDs and same-run identity mismatches are rejected. Only the affected
+service is checked. Healthy identical images are not recreated.
 
 Backend migrations run before replacing the old container. Failure preserves
 the old image. Health/smoke failure restores the prior image and fails CI.

@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
-runtime=$(cat /run/secrets/db_runtime_password)
-migration=$(cat /run/secrets/db_migration_password)
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -v runtime="$runtime" -v migration="$migration" <<'SQL'
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
+\set runtime `cat /run/secrets/db_runtime_password`
+\set migration `cat /run/secrets/db_migration_password`
 CREATE ROLE jobbod_runtime LOGIN PASSWORD :'runtime';
 CREATE ROLE jobbod_migration LOGIN PASSWORD :'migration';
 ALTER DATABASE jobbod OWNER TO jobbod_migration;

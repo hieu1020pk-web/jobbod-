@@ -12,10 +12,33 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/backend/ci-cd'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Detect migration changes
+        id: migrations
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ $BASE_SHA =~ ^[a-f0-9]{40}$ && $BASE_SHA != 0000000000000000000000000000000000000000 ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          else
+            BASE_SHA=$(git rev-parse HEAD^)
+          fi
+          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          if [[ $EVENT_NAME == push ]] && git diff --quiet "$BASE_SHA" HEAD -- alembic alembic.ini pyproject.toml uv.lock Dockerfile tests/test_migrations.py; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
@@ -33,6 +56,32 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
           provenance: false
+      - name: Rehearse migrations on disposable PostgreSQL + pgvector
+        if: steps.migrations.outputs.changed == 'true'
+        env:
+          IMAGE: ghcr.io/hieu1020pk-web/jobbod-backend@${{ steps.image.outputs.digest }}
+          BASE_SHA: ${{ steps.migrations.outputs.base }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'docker rm -f jobbod-ci-postgres; docker network rm jobbod-ci' EXIT
+          docker network create jobbod-ci
+          docker run -d --name jobbod-ci-postgres --network jobbod-ci \
+            -e POSTGRES_DB=jobbod_migration_test -e POSTGRES_HOST_AUTH_METHOD=trust \
+            pgvector/pgvector:pg17@sha256:7d0a41464797aeb9862dfdc0bbf1526b82cfd324cdd8036df19e3545f4a9ccb8
+          for _ in $(seq 1 40); do
+            if docker exec jobbod-ci-postgres pg_isready -U postgres -d jobbod_migration_test; then break; fi
+            sleep 1
+          done
+          docker exec jobbod-ci-postgres pg_isready -U postgres -d jobbod_migration_test
+          mkdir -p "$RUNNER_TEMP/jobbod-baseline"
+          git archive "$BASE_SHA" alembic alembic.ini | tar -x -C "$RUNNER_TEMP/jobbod-baseline"
+          chmod -R a+rX "$RUNNER_TEMP/jobbod-baseline"
+          docker run --rm --network jobbod-ci -v "$PWD:/work:ro" \
+            -v "$RUNNER_TEMP/jobbod-baseline:/baseline:ro" -w /work \
+            -e JOBBOD_TEST_DATABASE_URL=postgresql://postgres@jobbod-ci-postgres:5432/jobbod_migration_test \
+            -e JOBBOD_BASELINE_DIRECTORY=/baseline "$IMAGE" \
+            python -m unittest discover -s tests -p test_migrations.py -v
       - name: Deploy and check (one SSH connection)
         env:
           DEPLOY_KEY: ${{ secrets.JOBBOD_DEPLOY_KEY }}
@@ -41,9 +90,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          started=$SECONDS
+          result=failed
+          log="$RUNNER_TEMP/jobbod-deploy.log"
+          summary() {
+            {
+              echo "### backend deployment"
+              echo "- Commit: $GITHUB_SHA"
+              echo "- Image: $IMAGE"
+              echo "- Workflow result: $result"
+              echo "- Duration: $((SECONDS-started)) seconds"
+              if [[ -f $log ]]; then
+                echo '```text'
+                grep '^JOBBOD_RESULT=' "$log" | tail -n 1 || test $? -eq 1
+                echo '```'
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$HOME/.ssh/jobbod"
+          }
+          trap summary EXIT
+          head=$(timeout 30 git ls-remote origin refs/heads/backend/ci-cd | cut -f1)
+          if [[ $head != "$GITHUB_SHA" ]]; then
+            result=superseded
+            echo 'Branch advanced; refusing to deploy an old commit'
+            exit 0
+          fi
           umask 077
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/jobbod"
           printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          trap 'rm -f "$HOME/.ssh/jobbod"' EXIT
-          ssh -i "$HOME/.ssh/jobbod" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 devops@160.187.246.154 "deploy backend $IMAGE"
+          ssh -i "$HOME/.ssh/jobbod" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 devops@160.187.246.154 "deploy backend $IMAGE $GITHUB_RUN_ID $GITHUB_SHA" 2>&1 | tee "$log"
+          result=success

@@ -14,7 +14,7 @@ app)
         install -m 755 "$source_dir/scripts/renew-tls.sh" /etc/letsencrypt/renewal-hooks/deploy/jobbod-nginx
     fi
     install -d -o 10001 -g 10001 -m 700 /var/lib/jobbod/models /var/lib/jobbod/next-cache
-    install -m 755 "$source_dir/scripts/deploy.sh" /usr/local/sbin/jobbod-deploy
+    install -m 755 "$source_dir/scripts/deploy.py" /usr/local/sbin/jobbod-deploy
     install -m 755 "$source_dir/scripts/ci-entry.sh" /usr/local/bin/jobbod-ci-entry
     printf 'devops ALL=(root) NOPASSWD: /usr/local/sbin/jobbod-deploy *\n' > /etc/sudoers.d/50-jobbod-deploy
     chmod 440 /etc/sudoers.d/50-jobbod-deploy
