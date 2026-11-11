@@ -1,0 +1,71 @@
+{
+  "task_id": "EXAMPLE-101",
+  "title": "Minh họa: bổ sung kiểm tra quy tắc nghiệp vụ",
+  "source_requirement": "Example user story, giả định — không gắn với sản phẩm thật",
+  "risk_tier": "STANDARD",
+  "risk_signals": [],
+  "change_types": [
+    "business_logic"
+  ],
+  "risk_assessment": {
+    "classification_reason": "Thay đổi logic cô lập, không API hay production data",
+    "unresolved_unknowns": []
+  },
+  "base_sha": "0000000000000000000000000000000000000000",
+  "scope": {
+    "allowed_paths": [
+      "src/sample/**",
+      "tests/sample/**"
+    ],
+    "out_of_scope": [
+      "security, auth, payment, migrations"
+    ]
+  },
+  "dependencies": [],
+  "owners": {
+    "accountable_human": "example-tech-lead",
+    "executor": "example-dev-agent",
+    "independent_reviewer": "example-qa-agent"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-01",
+      "given": "đầu vào giả định",
+      "when": "xử lý business logic",
+      "then": "kết quả theo spec ví dụ"
+    }
+  ],
+  "required_checks": [
+    "build",
+    "lint",
+    "unit",
+    "business_regression"
+  ],
+  "review": {
+    "plan_review_reference": "EXAMPLE-PLAN-REVIEW",
+    "security_review_reference": ""
+  },
+  "approval": {
+    "human_change_approval_reference": "",
+    "risk_downgrade_decision_reference": ""
+  },
+  "release": {
+    "target_environment": "staging",
+    "rollback_or_restore_plan": ""
+  },
+  "execution": {
+    "fix_attempts_used": 0,
+    "transient_tool_retries_used": 0,
+    "token_quota": 10000,
+    "token_spent": 0,
+    "resource_isolation_note": "isolated demo",
+    "time_limit_minutes": 60,
+    "time_spent_minutes": 0,
+    "cost_limit": 5.0,
+    "cost_spent": 0.0
+  },
+  "na_exceptions": {},
+  "impacted_services": [
+    "sample-service"
+  ]
+}

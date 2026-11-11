@@ -1,0 +1,30 @@
+{
+  "purpose": "REFERENCE ONLY. Runtime/tool broker MUST implement the actual deny/allow policy.",
+  "default": "DENY",
+  "roles": {
+    "planner": {
+      "allowed": ["requirements.read", "repository.read", "contracts.read", "issue.read"],
+      "denied": ["repository.write", "secrets.read", "production.*", "permissions.write"]
+    },
+    "plan-reviewer": {
+      "allowed": ["requirements.read", "repository.read", "contracts.read", "issue.read"],
+      "denied": ["repository.write", "merge.execute", "production.*", "permissions.write"]
+    },
+    "orchestrator": {
+      "allowed": ["task.allocate_within_budget", "agent.cancel", "run.read", "workspace.allocate_scoped"],
+      "denied": ["permissions.escalate", "secrets.read", "production.deploy", "branch_protection.write"]
+    },
+    "developer": {
+      "allowed": ["repository.read", "repository.write.allowed_paths_only", "tests.run.sandbox", "pull_request.propose"],
+      "denied": ["production.*", "secrets.export", "branch_protection.write", "policy.write"]
+    },
+    "qa-reviewer": {
+      "allowed": ["repository.read", "tests.run.sandbox", "quality.review.submit"],
+      "denied": ["repository.write.current_review", "merge.execute", "production.*", "policy.write"]
+    },
+    "integrator": {
+      "allowed": ["pull_request.read", "merge.execute_if_protected_checks_pass", "staging.deploy_if_authorized"],
+      "denied": ["production.deploy_without_approval", "branch_protection.write", "secret_manager.admin"]
+    }
+  }
+}

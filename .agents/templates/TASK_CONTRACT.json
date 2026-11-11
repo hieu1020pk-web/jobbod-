@@ -1,0 +1,57 @@
+{
+  "task_id": "__REQUIRED__",
+  "title": "__REQUIRED__",
+  "source_requirement": "__REQUIRED__",
+  "risk_tier": "STANDARD",
+  "risk_signals": [],
+  "change_types": [
+    "business_logic"
+  ],
+  "risk_assessment": {
+    "classification_reason": "__REQUIRED__",
+    "unresolved_unknowns": []
+  },
+  "base_sha": "__REQUIRED__",
+  "scope": {
+    "allowed_paths": [
+      "__REQUIRED__"
+    ],
+    "out_of_scope": []
+  },
+  "dependencies": [],
+  "owners": {
+    "accountable_human": "__REQUIRED__",
+    "executor": "__REQUIRED__",
+    "independent_reviewer": ""
+  },
+  "acceptance_criteria": [
+    "AC-01: __REQUIRED__"
+  ],
+  "required_checks": [
+    "build",
+    "lint",
+    "unit",
+    "business_regression"
+  ],
+  "review": {
+    "plan_review_reference": "self_reviewed",
+    "security_review_reference": ""
+  },
+  "approval": {
+    "human_change_approval_reference": "",
+    "risk_downgrade_decision_reference": ""
+  },
+  "release": {
+    "target_environment": "staging",
+    "rollback_or_restore_plan": ""
+  },
+  "execution": {
+    "fix_attempts_used": 0,
+    "transient_tool_retries_used": 0,
+    "resource_isolation_note": "workspace"
+  },
+  "na_exceptions": {},
+  "impacted_services": [
+    "__REQUIRED__"
+  ]
+}

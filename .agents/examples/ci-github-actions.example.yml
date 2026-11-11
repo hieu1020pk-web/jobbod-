@@ -1,0 +1,35 @@
+# EXAMPLE ONLY — copy/adapt after approving trust boundary and branch rules.
+# Prefer running a pinned validator from a trusted protected branch or reusable workflow.
+# The following is a manual test helper, NOT sufficient production enforcement.
+name: ai-policy-manual-check-example
+on:
+  workflow_dispatch:
+    inputs:
+      task_contract:
+        description: 'Path to task contract in repository'
+        required: true
+      base_sha:
+        description: 'Verified base SHA'
+        required: true
+      head_sha:
+        description: 'Verified head SHA'
+        required: true
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate project and task
+        env:
+          TASK: ${{ inputs.task_contract }}
+          BASE: ${{ inputs.base_sha }}
+          HEAD: ${{ inputs.head_sha }}
+        run: |
+          python3 .agents/scripts/ai_policy.py config
+          python3 .agents/scripts/ai_policy.py task --file "$TASK"
+          python3 .agents/scripts/ai_policy.py scope --file "$TASK" --base "$BASE" --head "$HEAD"
