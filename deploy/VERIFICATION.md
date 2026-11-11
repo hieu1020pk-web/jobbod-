@@ -33,6 +33,7 @@
 | Unhealthy release rollback | Deliberately broken AI image rejected; prior image restored healthy; workflow failed as expected; Dockerfile restored and next workflow succeeded |
 | Idempotency / serialization | Concurrent backend and AI redeploys of current digest PASS, no-op migration PASS; global mutation lock used |
 | CI key scope | Shell command, invalid digest and unknown service all rejected with exit 2 |
+| Anonymous packages | Unauthenticated GHCR token + manifest reads PASS for all five packages; no personal token supplied |
 | Secret scan | Current/previous known server credential files and CI private key absent from tracked source |
 | Diff checks | `git diff --check` across all three checkouts PASS; no remaining `.ai/` reference in copied rules |
 | Privilege cleanup | Temporary unrestricted sudo removed from both hosts; `sudo -n true` denied afterward; app retains only validated deploy entrypoint |
@@ -44,6 +45,10 @@
 - [AI](https://github.com/hieu1020pk-web/jobbod-/actions/runs/42964232983)
 - [Infrastructure source builds](https://github.com/hieu1020pk-web/jobbod-/actions/runs/42963170731)
 - [Expected failure / successful rollback drill](https://github.com/hieu1020pk-web/jobbod-/actions/runs/42963947781)
+
+Backend and AI were rerun successfully after unrestricted sudo was removed.
+Frontend encountered one runner-to-server SSH connection timeout; a bounded retry
+was used while public HTTP and operator SSH remained reachable.
 
 Warm-cache jobs before final privilege check: backend 28 seconds, AI 26 seconds.
 These are observed bootstrap timings, not guaranteed deployment SLAs. Each app
