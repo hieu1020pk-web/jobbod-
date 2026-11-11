@@ -51,8 +51,10 @@ class InfrastructureTests(unittest.TestCase):
                 self.assertEqual(response['Body'].read(), b'jobbod-smoke')
             finally:
                 response['Body'].close()
+            # MinIO returns the buckets visible under ListBucket policy.
+            self.assertEqual({item['Name'] for item in client.list_buckets()['Buckets']}, {bucket})
             with self.assertRaises(ClientError) as failure:
-                client.list_buckets()
+                client.create_bucket(Bucket='jobbod-forbidden-probe')
             self.assertEqual(failure.exception.response['Error']['Code'], 'AccessDenied')
         finally:
             client.delete_object(Bucket=bucket, Key=key)
