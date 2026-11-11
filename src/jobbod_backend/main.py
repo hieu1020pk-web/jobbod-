@@ -1,6 +1,16 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
-app = FastAPI(title="Jobbod backend")
+
+@asynccontextmanager
+async def lifespan(app):
+    if os.environ.get("JOBBOD_REQUIRE_CONFIG") == "1":
+        from jobbod_backend.config import settings
+        settings()
+    yield
+
+app = FastAPI(title="Jobbod backend", lifespan=lifespan)
 
 
 @app.get("/health/live")
