@@ -1,5 +1,8 @@
-name: Infra images (manual)
+name: Infra images
 on:
+  push:
+    branches: [backend/ci-cd]
+    paths: [deploy/minio/**, .github/workflows/infra-images.yml]
   workflow_dispatch:
 permissions:
   contents: read
