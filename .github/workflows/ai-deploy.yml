@@ -12,10 +12,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/ai/ci-cd'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 2
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
@@ -41,9 +45,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          started=$SECONDS
+          result=failed
+          log="$RUNNER_TEMP/jobbod-deploy.log"
+          summary() {
+            {
+              echo "### ai deployment"
+              echo "- Commit: $GITHUB_SHA"
+              echo "- Image: $IMAGE"
+              echo "- Workflow result: $result"
+              echo "- Duration: $((SECONDS-started)) seconds"
+              if [[ -f $log ]]; then
+                echo '```text'
+                grep '^JOBBOD_RESULT=' "$log" | tail -n 1 || test $? -eq 1
+                echo '```'
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$HOME/.ssh/jobbod"
+          }
+          trap summary EXIT
+          head=$(timeout 30 git ls-remote origin refs/heads/ai/ci-cd | cut -f1)
+          if [[ $head != "$GITHUB_SHA" ]]; then
+            result=superseded
+            echo 'Branch advanced; refusing to deploy an old commit'
+            exit 0
+          fi
           umask 077
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/jobbod"
           printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          trap 'rm -f "$HOME/.ssh/jobbod"' EXIT
-          ssh -i "$HOME/.ssh/jobbod" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 devops@160.187.246.154 "deploy ai $IMAGE"
+          ssh -i "$HOME/.ssh/jobbod" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 devops@160.187.246.154 "deploy ai $IMAGE $GITHUB_RUN_ID $GITHUB_SHA" 2>&1 | tee "$log"
+          result=success
