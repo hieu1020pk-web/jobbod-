@@ -55,8 +55,8 @@ fi
 if ! compose up -d --no-deps --wait --wait-timeout 150 "$service"; then rollback; exit 1; fi
 if grep -q '^FRONTEND_IMAGE=' "$state" && grep -q '^BACKEND_IMAGE=' "$state"; then
     if ! compose up -d --no-deps --wait --wait-timeout 60 nginx ||
-       ! curl --fail --silent --show-error --retry 5 --retry-delay 2 --max-time 10 http://127.0.0.1/ >/dev/null ||
-       ! curl --fail --silent --show-error --retry 5 --retry-delay 2 --max-time 10 http://127.0.0.1/api/hello; then
+       ! curl --fail --silent --show-error --retry 5 --retry-delay 2 --max-time 10 --resolve jobbod.net:443:127.0.0.1 https://jobbod.net/ >/dev/null ||
+       ! curl --fail --silent --show-error --retry 5 --retry-delay 2 --max-time 10 --resolve api.jobbod.net:443:127.0.0.1 https://api.jobbod.net/api/hello; then
         rollback; exit 1
     fi
 fi

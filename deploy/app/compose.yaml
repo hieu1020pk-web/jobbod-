@@ -75,7 +75,8 @@
         "backend_config"
       ],
       "environment": {
-        "JOBBOD_REQUIRE_CONFIG": "1"
+        "JOBBOD_REQUIRE_CONFIG": "1",
+        "FORWARDED_ALLOW_IPS": "*"
       }
     },
     "ai": {
@@ -170,16 +171,20 @@
       ],
       "image": "nginx:stable-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311",
       "ports": [
-        "80:80"
+        "80:80",
+        "443:443"
       ],
       "volumes": [
-        "./nginx.conf:/etc/nginx/nginx.conf:ro"
+        "./nginx.conf:/etc/nginx/nginx.conf:ro",
+        "./cloudflare-realip.conf:/etc/nginx/cloudflare-realip.conf:ro",
+        "/var/lib/jobbod/acme:/var/www/acme:ro",
+        "/etc/letsencrypt:/etc/letsencrypt:ro"
       ],
       "mem_limit": "64m",
       "healthcheck": {
         "test": [
           "CMD-SHELL",
-          "wget -q -O /dev/null http://127.0.0.1/"
+          "wget -q -O /dev/null http://127.0.0.1/health/gateway"
         ],
         "interval": "10s",
         "timeout": "5s",

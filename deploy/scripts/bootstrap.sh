@@ -8,7 +8,11 @@ install -d -m 755 /var/lib/jobbod /opt/jobbod
 case "$role" in
 app)
     install -d -m 755 /opt/jobbod/app
-    install -m 644 "$source_dir/app/compose.yaml" "$source_dir/app/nginx.conf" /opt/jobbod/app/
+    install -m 644 "$source_dir/app/compose.yaml" "$source_dir/app/nginx.conf" "$source_dir/app/cloudflare-realip.conf" /opt/jobbod/app/
+    install -d -m 755 /var/lib/jobbod/acme
+    if [[ -d /etc/letsencrypt/renewal-hooks/deploy ]]; then
+        install -m 755 "$source_dir/scripts/renew-tls.sh" /etc/letsencrypt/renewal-hooks/deploy/jobbod-nginx
+    fi
     install -d -o 10001 -g 10001 -m 700 /var/lib/jobbod/models /var/lib/jobbod/next-cache
     install -m 755 "$source_dir/scripts/deploy.sh" /usr/local/sbin/jobbod-deploy
     install -m 755 "$source_dir/scripts/ci-entry.sh" /usr/local/bin/jobbod-ci-entry

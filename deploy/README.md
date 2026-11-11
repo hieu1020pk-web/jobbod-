@@ -63,7 +63,7 @@ Neither account is added to the Docker group (equivalent to unrestricted root).
 ## Data, network and resource budget
 
 PostgreSQL 17 + pgvector, Redis 7.4 AOF, MinIO have persistent directories under
-`/var/lib/jobbod`. App publishes only Nginx port 80; API is `/api/hello`.
+`/var/lib/jobbod`. App publishes Nginx ports 80/443; frontend is https://jobbod.net and API is https://api.jobbod.net/api/hello. See TLS.md for renewal and Cloudflare settings.
 AI and app container ports are internal. Infra binds published ports only to
 `100.98.24.40`. App can reach 5432, 6379, 9000; operator `100.74.53.37` can also
 reach console 9001. A Docker `DOCKER-USER` policy enforces this independently of
@@ -142,5 +142,4 @@ readiness before resuming traffic. Never run restore automatically from CI.
 
 MinIO community is archived. Its server and optional CLI are built from fixed
 source commits, and runtime images are pinned by digest. There is no claim of
-ongoing upstream security maintenance. No domain supplied: HTTP only until a
-domain and TLS configuration are added.
+ongoing upstream security maintenance. Domain and HTTPS configuration are documented in TLS.md.

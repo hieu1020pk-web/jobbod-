@@ -62,8 +62,7 @@ workflow has one SSH command; server performs pull/migration/health/smoke within
 
 ## Limits / not executed
 
-No model inference/load test: no model or AI task has been selected. No HTTPS:
-no domain provided. No tailnet-admin ACL edit: tailnet-admin credentials were not
+No model inference/load test: no model or AI task has been selected. HTTPS was absent at bootstrap; subsequently enabled as documented in TLS.md. No tailnet-admin ACL edit: tailnet-admin credentials were not
 provided; applied host firewall and supplied a mergeable policy fragment instead.
 No off-host/encrypted backup or MinIO object backup: no destination/recipient key
 provided. No lint/full test suites added to app workflows, per requested lean CI.
