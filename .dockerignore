@@ -12,3 +12,4 @@ models
 tests
 deploy
 *.md
+.cache/
